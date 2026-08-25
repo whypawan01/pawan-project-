@@ -1,0 +1,6 @@
+{
+  "name": "FixAI - AI Website Audit & Fix",
+  "description": "AI-powered website audit, speed optimization, and error repair service.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
