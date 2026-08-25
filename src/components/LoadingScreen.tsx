@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Sparkles, Zap, Trophy, Play } from 'lucide-react';
 
 interface LoadingScreenProps {
@@ -10,51 +10,62 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
   const [rabbitPos, setRabbitPos] = useState(10);
   const [turtlePos, setTurtlePos] = useState(5);
   const [rabbitAsleep, setRabbitAsleep] = useState(false);
-  const [winner, setWinner] = useState<string | null>(null);
   const [isFadingOut, setIsFadingOut] = useState(false);
+
+  const completedRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
 
   useEffect(() => {
     const startTime = Date.now();
-    const duration = 4500; // 4.5 seconds
+    const duration = 4200; // 4.2 seconds duration
 
     const interval = setInterval(() => {
+      if (completedRef.current) {
+        clearInterval(interval);
+        return;
+      }
+
       const elapsed = Date.now() - startTime;
       const t = Math.min(elapsed / duration, 1);
       
       setProgress(Math.round(t * 100));
 
-      // Rabbit logic: starts very fast (0 to 70% in first 35% time), then slows and naps
+      // Rabbit logic: starts fast (0 to 72% in first 35% time), then sleeps
       if (t < 0.35) {
-        // Fast burst
         const rNorm = t / 0.35;
-        setRabbitPos(10 + rNorm * 62); // reaches ~72%
+        setRabbitPos(10 + rNorm * 62);
         setRabbitAsleep(false);
       } else {
-        // Asleep from 35% onward
         setRabbitPos(72);
         setRabbitAsleep(true);
       }
 
       // Turtle logic: steady constant pace from 5% to 92% (finish line)
-      // At t >= 0.85, turtle passes rabbit (72%) and hits 92% at t=0.95
       const turt = 5 + t * 87;
       setTurtlePos(turt);
 
-      if (turt >= 75 && !winner) {
-        setWinner('turtle');
-      }
-
       if (t >= 1) {
+        completedRef.current = true;
         clearInterval(interval);
         setIsFadingOut(true);
         setTimeout(() => {
-          onComplete();
-        }, 600);
+          onCompleteRef.current();
+        }, 500);
       }
-    }, 30);
+    }, 25);
 
     return () => clearInterval(interval);
-  }, [onComplete, winner]);
+  }, []); // Run once on mount
+
+  const handleSkip = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    setIsFadingOut(true);
+    setTimeout(() => {
+      onCompleteRef.current();
+    }, 300);
+  };
 
   return (
     <div
@@ -80,10 +91,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({ onComplete }) => {
 
         <button
           id="skip-intro-btn"
-          onClick={() => {
-            setIsFadingOut(true);
-            setTimeout(onComplete, 300);
-          }}
+          onClick={handleSkip}
           className="px-3.5 py-1.5 rounded-full text-xs font-medium text-slate-400 hover:text-white bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 transition flex items-center space-x-1.5 cursor-pointer backdrop-blur-sm"
         >
           <span>Skip Intro</span>
